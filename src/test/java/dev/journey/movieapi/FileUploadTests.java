@@ -74,10 +74,6 @@ public class FileUploadTests {
     @Test
     @Disabled
     void shouldGetFileAsResource() throws Exception {
-        /*MockHttpServletRequestBuilder servletRequest = MockMvcRequestBuilders
-                .request(HttpMethod.GET, "/file/")
-                .param("fileName", "test.jpg"); */
-
         MockHttpServletRequestBuilder servletRequest = MockMvcRequestBuilders
                 .get("/file/")
                 .accept(MediaType.APPLICATION_FORM_URLENCODED_VALUE)

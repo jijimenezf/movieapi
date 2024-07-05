@@ -4,14 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.util.UriComponentsBuilder;
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -104,4 +104,59 @@ class ApplicationTests {
 		}
 	}
 
+	@Test
+	@DirtiesContext
+	void shouldAddANewMovie() {
+		MovieDTO movieDTORequest = new MovieDTO();
+		movieDTORequest.setDirector("David Lynch");
+		movieDTORequest.setTitle("Blue Velvet");
+		movieDTORequest.setStudio("Sony Pictures");
+		movieDTORequest.setPoster("http://localhost:8080/file/");
+		movieDTORequest.setPosterUrl("http://localhost:8080/file/");
+		movieDTORequest.setReleaseYear(1989);
+		ResponseEntity<MovieDTO> response = restTemplate.postForEntity(BASE_URL + "/addMovie", movieDTORequest, MovieDTO.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+		MovieDTO result = response.getBody();
+		assertThat(result).isNotNull();
+	}
+
+	@Test
+	@DirtiesContext
+	void shouldUpdateANewMovie() {
+		HttpEntity<MovieDTO> entity = getMovieDTOHttpEntity();
+
+		ResponseEntity<MovieDTO> response = restTemplate.exchange(
+				BASE_URL + "/update/91",
+				HttpMethod.PUT, entity, MovieDTO.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+		//MovieDTO result = response.getBody();
+		//assertThat(result).isNotNull();
+	}
+
+	private static HttpEntity<MovieDTO> getMovieDTOHttpEntity() {
+		Set<String> movieCast = new HashSet<>();
+		movieCast.add("Liam Neeson");
+		movieCast.add("Ben Kingsley");
+		movieCast.add("Ralph Fiennes");
+		movieCast.add("Caroline Goodall");
+		movieCast.add("Jonathan Sagall");
+		movieCast.add("Embeth Davidtz");
+		movieCast.add("Malgorzata Gebel");
+		movieCast.add("Shmuel Levy");
+		movieCast.add("Mark Ivanir");
+
+		MovieDTO movieDTORequest = new MovieDTO();
+		movieDTORequest.setDirector("Steven Spielberg");
+		movieDTORequest.setTitle("The Schindler List");
+		movieDTORequest.setStudio("Paramount");
+		movieDTORequest.setReleaseYear(1993);
+		movieDTORequest.setPoster("http://localhost:8080/file/");
+		movieDTORequest.setPosterUrl("http://localhost:8080/file/");
+		movieDTORequest.setMovieCast(movieCast);
+
+		HttpHeaders headers = new HttpHeaders();
+		return new HttpEntity<>(movieDTORequest, headers);
+	}
 }

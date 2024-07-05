@@ -40,15 +40,15 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDTO addMovie(MovieDTO movieDTO, MultipartFile multipartFile) throws IOException {
-        Path filePath = Paths.get(path + File.separator + multipartFile.getOriginalFilename());
+    public MovieDTO addMovie(MovieDTO movieDTO) {
+        /*Path filePath = Paths.get(path + File.separator + multipartFile.getOriginalFilename());
         if (Files.exists(filePath)) {
             throw new FileExistsException("File already exists, please enter another file name :-(");
         }
 
         String uploadedFile = fileService.uploadFile(path, multipartFile);
 
-        movieDTO.setPoster(uploadedFile);
+        movieDTO.setPoster(uploadedFile);*/
 
         Movie movie = new Movie(null, movieDTO.getTitle(),
                 movieDTO.getDirector(), movieDTO.getStudio(),
@@ -57,7 +57,7 @@ public class MovieServiceImpl implements MovieService {
 
         Movie movieObj = movieRepository.save(movie);
 
-        String posterUrl = baseUrl + "/file/" + uploadedFile;
+        String posterUrl = baseUrl + "/file/"; // + uploadedFile;
 
         return new MovieDTO(movieObj.getMovieId(), movieObj.getTitle(),
                 movieObj.getDirector(), movieObj.getStudio(),

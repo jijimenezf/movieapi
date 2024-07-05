@@ -1,9 +1,14 @@
 package dev.journey.movieapi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.journey.movieapi.exceptions.EmptyFileException;
 import dev.journey.movieapi.services.MovieService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -48,8 +53,25 @@ public class MovieController {
     ) {
         return ResponseEntity.ok(movieService.getMoviesWithPaginationAndSorted(pageNumber, pageSize, sortBy, dir));
     }
-    /**
-     * addMovieHandler
-     * updateMovieHandler
-     */
+
+    //@PreAuthorize("hasAuthority('ADMIN')")
+    @PostMapping("/addMovie")
+    public ResponseEntity<MovieDTO> addMovie(@RequestBody MovieDTO movieDto) {
+        MovieDTO result = movieService.addMovie(movieDto);
+        return new ResponseEntity<>(result, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/update/{movieId}")
+    public ResponseEntity<MovieDTO> updateMovie(
+            @PathVariable Integer movieId,
+            @RequestBody MovieDTO movieDto
+    ) {
+        try {
+            MovieDTO result = movieService.updateMovie(movieId, movieDto, null);
+            // return ResponseEntity.ok(result);
+            return new ResponseEntity<>(result, HttpStatus.NO_CONTENT);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
