@@ -40,7 +40,7 @@ public class RefreshTokenService {
     }
 
     public RefreshToken verifyRefreshToken(String refreshToken) {
-        RefreshToken refToken = refreshTokenRepository.findRefreshToken(refreshToken)
+        RefreshToken refToken = refreshTokenRepository.refreshToken(refreshToken)
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
 
         if (refToken.getExpirationTime().compareTo(Instant.now()) < 0) {
