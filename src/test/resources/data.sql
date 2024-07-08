@@ -42,3 +42,5 @@ INSERT INTO MOVIE(movie_id, director, poster, release_year, studio, title) VALUE
 INSERT INTO MOVIE_CAST(movie_movie_id, movie_cast) VALUES (79, 'Robert De Niro, Ray Liotta, Joe Pesci');
 INSERT INTO MOVIE(movie_id, director, poster, release_year, studio, title) VALUES (78, 'Martin Scorsese', 'DEPARTED', 2006, 'Columbia Pictures', 'The Departed');
 INSERT INTO MOVIE_CAST(movie_movie_id, movie_cast) VALUES (78, 'Leonardo DiCaprio, Matt Damon, Jack Nicholson');
+INSERT INTO USERS(user_id, email, name, password, role, username) VALUES (5001, 'jose.jimenez@imdb.com', 'Jose Jimenez', 'Not4r3al$', 'USER', 'jose.jimenez@imdb.com');
+INSERT INTO REFRESH_TOKEN(expiration_time, refresh_token, user_user_id) VALUES ('2024-12-30 12:29:56', 'cbebf44e-8086-4e91-b219-abc2dbb1be41', 5001);
