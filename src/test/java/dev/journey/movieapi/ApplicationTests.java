@@ -1,11 +1,27 @@
 package dev.journey.movieapi;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.util.UriComponentsBuilder;
 
 
@@ -15,8 +31,11 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+//@Import(TestSecurityConfig.class) /* Import is not working, but inner class is working as expected */
+@TestPropertySource(locations="classpath:test.properties")
 class ApplicationTests {
 
 	@Autowired
@@ -27,6 +46,7 @@ class ApplicationTests {
 	@Test
 	void shouldReturnAnExistingRecord() throws Exception {
 		ResponseEntity<MovieDTO> response = restTemplate
+				.withBasicAuth("user", "user")
 				.getForEntity(BASE_URL + "/99", MovieDTO.class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		MovieDTO singleMovie = response.getBody();
@@ -39,6 +59,7 @@ class ApplicationTests {
 	void shouldReturnTheFullListOfMovies() throws Exception {
 		// Instead of using List
 		ResponseEntity<MovieDTO[]> response = restTemplate
+				.withBasicAuth("user", "user")
 				.getForEntity(BASE_URL + "/all", MovieDTO[].class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		MovieDTO[] results = response.getBody();
@@ -49,10 +70,12 @@ class ApplicationTests {
 	@DirtiesContext
 	void shouldDeleteAMovie() throws Exception {
 		ResponseEntity<Void> response = restTemplate
+				.withBasicAuth("user", "user")
 			.exchange(BASE_URL + "/delete/78", HttpMethod.DELETE, null, Void.class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
 		ResponseEntity<String> getResponse = restTemplate
+				.withBasicAuth("user", "user")
 				.getForEntity(BASE_URL + "/78", String.class);
 
 		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -66,6 +89,7 @@ class ApplicationTests {
 				.queryParam("pageSize", 10);
 
 		ResponseEntity<MovieResponse> response = restTemplate
+				.withBasicAuth("user", "user")
 				.getForEntity(uriBuilder.toUriString(), MovieResponse.class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -90,6 +114,7 @@ class ApplicationTests {
 				.queryParam("dir", "asc");
 
 		ResponseEntity<MovieResponse> response = restTemplate
+				.withBasicAuth("user", "user")
 				.getForEntity(uriBuilder.toUriString(), MovieResponse.class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -114,7 +139,9 @@ class ApplicationTests {
 		movieDTORequest.setPoster("http://localhost:8080/file/");
 		movieDTORequest.setPosterUrl("http://localhost:8080/file/");
 		movieDTORequest.setReleaseYear(1989);
-		ResponseEntity<MovieDTO> response = restTemplate.postForEntity(BASE_URL + "/addMovie", movieDTORequest, MovieDTO.class);
+		ResponseEntity<MovieDTO> response = restTemplate
+				.withBasicAuth("admin", "admin")
+				.postForEntity(BASE_URL + "/addMovie", movieDTORequest, MovieDTO.class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
 		MovieDTO result = response.getBody();
@@ -126,8 +153,9 @@ class ApplicationTests {
 	void shouldUpdateANewMovie() {
 		HttpEntity<MovieDTO> entity = getMovieDTOHttpEntity();
 
-		ResponseEntity<MovieDTO> response = restTemplate.exchange(
-				BASE_URL + "/update/91",
+		ResponseEntity<MovieDTO> response = restTemplate
+				.withBasicAuth("user", "user")
+				.exchange(BASE_URL + "/update/91",
 				HttpMethod.PUT, entity, MovieDTO.class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
@@ -158,5 +186,72 @@ class ApplicationTests {
 
 		HttpHeaders headers = new HttpHeaders();
 		return new HttpEntity<>(movieDTORequest, headers);
+	}
+
+	@Test
+	void shouldNotAllowARequestWithoutAuthentication() {
+		ResponseEntity<MovieDTO> response = restTemplate
+				.getForEntity(BASE_URL + "/99", MovieDTO.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+	}
+
+	@Test
+	@Disabled
+	void shouldAllowARequestWithoutAuthentication() {
+		ResponseEntity<MovieDTO> response = restTemplate
+				.getForEntity(BASE_URL + "/99", MovieDTO.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
+
+	@TestConfiguration
+	static class Config {
+
+		@Bean
+		public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+			// @formatter:off
+			http
+				.authorizeHttpRequests(auth -> auth
+					.requestMatchers(HttpMethod.GET, "/api/v1/movies/**").hasAnyRole("USER", "ADMIN")
+					.requestMatchers(HttpMethod.POST, "/api/v1/movies/**").hasAnyRole("ADMIN")
+					.requestMatchers(HttpMethod.PUT, "/api/v1/movies/**").hasAnyRole("USER", "ADMIN")
+					.requestMatchers(HttpMethod.DELETE, "/api/v1/movies/**").hasAnyRole("USER", "ADMIN")
+					.requestMatchers("/api/v1/auth/**", "/forgotPassword/**")
+					.permitAll()
+					.anyRequest()
+					.authenticated())
+				.httpBasic(withDefaults())
+				.csrf(CsrfConfigurer::disable)
+				.sessionManagement(session -> session
+						.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authenticationProvider(authenticationProvider())
+			//.addFilterBefore(authFilterService, UsernamePasswordAuthenticationFilter.class);
+			;
+			// @formatter:on
+
+			return http.build();
+		}
+
+		@Bean
+		public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+			UserDetails user = User.withUsername("user").password(passwordEncoder.encode("user")).roles("USER").build();
+			UserDetails admin = User.withUsername("admin").password(passwordEncoder.encode("admin")).roles("USER", "ADMIN").build();
+
+			return new InMemoryUserDetailsManager(user, admin);
+		}
+
+		@Bean
+		public PasswordEncoder passwordEncoder() {
+			return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+		}
+
+		@Bean
+		public AuthenticationProvider authenticationProvider() {
+			DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
+			daoAuthenticationProvider.setUserDetailsService(userDetailsService(passwordEncoder()));
+			daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
+			return daoAuthenticationProvider;
+		}
+
 	}
 }

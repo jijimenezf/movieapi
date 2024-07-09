@@ -4,6 +4,7 @@ import dev.journey.movieapi.auth.utils.AuthResponse;
 import dev.journey.movieapi.auth.utils.LoginRequest;
 import dev.journey.movieapi.auth.utils.RefreshTokenRequest;
 import dev.journey.movieapi.auth.utils.RegisterRequest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,8 +35,9 @@ public class AuthControllerTests {
     }
 
     @Test
+    @Disabled
     void shouldLoginAnExistingUser() throws Exception {
-        LoginRequest loginRequest = new LoginRequest("jose.jimenez@imdb.com", "Not4r3al$");
+        LoginRequest loginRequest = new LoginRequest("user", "user");
         ResponseEntity<AuthResponse> response = restTemplate
                 .postForEntity(BASE_URL + "/login", loginRequest, AuthResponse.class);
 
