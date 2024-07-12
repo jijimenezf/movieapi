@@ -1,14 +1,11 @@
 package dev.journey.movieapi;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.journey.movieapi.exceptions.EmptyFileException;
 import dev.journey.movieapi.services.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,7 +51,7 @@ public class MovieController {
         return ResponseEntity.ok(movieService.getMoviesWithPaginationAndSorted(pageNumber, pageSize, sortBy, dir));
     }
 
-    //@PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/addMovie")
     public ResponseEntity<MovieDTO> addMovie(@RequestBody MovieDTO movieDto) {
         MovieDTO result = movieService.addMovie(movieDto);
